@@ -1,0 +1,5 @@
+# default folder for binary files
+build
+
+# folder for configurations
+.vscode
