@@ -67,15 +67,25 @@ class Net : NetBase<Ss...> {
 	constexpr Net() : data(), base_type(data.data()) {}
 	constexpr Net(const Net& other) : Net() { *this = other; }
 
+	constexpr auto operator()(
+		const std::array<float, base_type::in_size>& data) {
+		return static_cast<base_type*>(this)->operator()(data);
+	}
+
+	constexpr Net& operator=(const Net& other) {
+		data = other.data;
+		return *this;
+	}
+
+	Net operator+(const Net& other) const { return merge(other).mutation(2); }
+
 	void rand() {
-		// TODO: randomize
 		std::random_device rd;
 		std::uniform_real_distribution<float> rand;
 		for (auto& n : data) {
 			n = rand(rd);
 		}
 	}
-	Net operator+(const Net& other) const { return merge(other).mutation(2); }
 
 	Net merge(const Net& other) const {
 		Net o(*this);
@@ -108,16 +118,6 @@ class Net : NetBase<Ss...> {
 			data[mut_idx] += rand_mutation(rd);
 		}
 
-		return *this;
-	}
-
-	constexpr auto operator()(
-		const std::array<float, base_type::in_size>& data) {
-		return static_cast<base_type*>(this)->operator()(data);
-	}
-
-	constexpr Net& operator=(const Net& other) {
-		data = other.data;
 		return *this;
 	}
 
