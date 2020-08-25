@@ -28,7 +28,6 @@ class Layer {
 	std::array<float, OUT> operator()(const std::array<float, IN>& data) const {
 		std::array<float, OUT> o;
 
-#pragma omp parallel for simd num_threads(OUT)
 		for (int i = 0; i < OUT; ++i) {
 			o[i] = neurons[i](data);
 		}
