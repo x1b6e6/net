@@ -78,7 +78,14 @@ class Net : NetBase<Ss...> {
 		return *this;
 	}
 
-	Net operator+(const Net& other) const { return merge(other).mutation(2); }
+	Net operator+(const Net& other) const { return merge(other); }
+	Net& operator+(int mut) { return mutation(mut); }
+	Net& operator++() { return mutation(); }
+	Net operator++(int z) const {
+		Net o{*this};
+		mutation(z ? z : 1);
+		return o;
+	}
 
 	void rand() {
 		std::random_device rd;
