@@ -16,11 +16,11 @@ class NetBase<IN> {
    public:
 	using result_type = std::array<float, IN>;
 
-	constexpr static std::size_t in_size = IN;
-	constexpr static std::size_t out_size = IN;
+	constexpr static auto in_size = IN;
+	constexpr static auto out_size = IN;
+	constexpr static auto data_size = 0;
 
 	constexpr NetBase(float*) {}
-	constexpr static std::size_t data_size() { return 0; }
 
 	constexpr std::array<float, IN> operator()(
 		const std::array<float, IN>& data) const {
@@ -36,15 +36,14 @@ class NetBase<IN, OUT, Ss...> : NetBase<OUT, Ss...> {
 	using result_type = typename base_type::result_type;
 	using feed_type = std::array<float, IN>;
 
-	constexpr static std::size_t in_size = IN;
-	constexpr static std::size_t out_size = IN;
+	constexpr static auto in_size = IN;
+	constexpr static auto out_size = IN;
+	constexpr static auto data_size =
+		layer_type::data_size + base_type::data_size;
 
 	constexpr NetBase(float* data)
-		: layer(data), base_type(data + layer_type::data_size()) {}
+		: layer(data), base_type(data + layer_type::data_size) {}
 
-	constexpr static std::size_t data_size() {
-		return layer_type::data_size() + base_type::data_size();
-	}
 	constexpr auto operator()(const std::array<float, IN>& data) const {
 		return static_cast<const base_type*>(this)->operator()(
 			reinterpret_cast<const layer_type*>(this)->operator()(data));
@@ -63,6 +62,8 @@ class Net : NetBase<Ss...> {
    public:
 	using result_type = typename base_type::result_type;
 	using feed_type = typename base_type::feed_type;
+
+	constexpr static auto data_size = base_type::data_size;
 
 	constexpr Net() : data(), base_type(data.data()) {}
 	constexpr Net(const Net& other) : Net() { *this = other; }
@@ -92,7 +93,7 @@ class Net : NetBase<Ss...> {
 
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
-			0, base_type::data_size() - 1);
+			0, base_type::data_size - 1);
 
 		auto r = rand_index(rd);
 		auto l = rand_index(rd);
@@ -100,7 +101,7 @@ class Net : NetBase<Ss...> {
 			std::swap(l, r);
 		std::memcpy(o.data.data() + 0, data.data() + 0, l * sizeof(float));
 		std::memcpy(o.data.data() + r, data.data() + r,
-					(base_type::data_size() - r) * sizeof(float));
+					(base_type::data_size - r) * sizeof(float));
 		std::memcpy(o.data.data() + l, other.data.data() + l,
 					(r - l) * sizeof(float));
 
@@ -110,7 +111,7 @@ class Net : NetBase<Ss...> {
 	Net& mutation(std::size_t count = 1) {
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
-			0, base_type::data_size() - 1);
+			0, base_type::data_size - 1);
 		std::uniform_real_distribution<float> rand_mutation(-50.f, 50.f);
 
 		for (int i = 0; i < count; ++i) {
@@ -122,7 +123,7 @@ class Net : NetBase<Ss...> {
 	}
 
    private:
-	std::array<float, base_type::data_size()> data;
+	std::array<float, data_size> data;
 };
 }  // namespace net
 

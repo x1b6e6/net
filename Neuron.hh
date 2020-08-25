@@ -17,6 +17,8 @@ constexpr float sigmoid(float x) {
 template <std::size_t IN>
 class Neuron {
    public:
+	constexpr static auto data_size = IN * 2;
+
 	constexpr Neuron(float* data = nullptr) : ndata(data) {}
 
 	constexpr void operator=(const Neuron& other) { ndata = other.ndata; }
@@ -28,7 +30,6 @@ class Neuron {
 		}
 		return sigmoid(o);
 	}
-	constexpr static std::size_t data_size() { return 2 * IN; }
 
    private:
 	float* ndata;

@@ -12,11 +12,13 @@ class Layer {
    public:
 	using neuron_type = Neuron<IN>;
 
+	constexpr static auto data_size = OUT * neuron_type::data_size;
+
 	constexpr Layer(float* data = nullptr) {
 		if (data != nullptr) {
 			for (int i = 0; i < OUT; ++i) {
 				neurons[i] = neuron_type(data);
-				data += neuron_type::data_size();
+				data += neuron_type::data_size;
 			}
 		}
 	}
@@ -32,10 +34,6 @@ class Layer {
 		}
 
 		return o;
-	}
-
-	constexpr static std::size_t data_size() {
-		return OUT * neuron_type::data_size();
 	}
 
    private:
