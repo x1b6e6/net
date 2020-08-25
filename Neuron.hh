@@ -17,7 +17,9 @@ constexpr float sigmoid(float x) {
 template <std::size_t IN>
 class Neuron {
    public:
-	constexpr Neuron(float* data) : ndata(data) {}
+	constexpr Neuron(float* data = nullptr) : ndata(data) {}
+
+	constexpr void operator=(const Neuron& other) { ndata = other.ndata; }
 
 	constexpr float operator()(const std::array<float, IN>& data) const {
 		float o = 0.f;
