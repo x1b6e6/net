@@ -28,3 +28,5 @@ class Trainer {
 	const std::size_t nets_size;
 };
 }  // namespace net
+
+// vim: set ts=4 sw=4 :

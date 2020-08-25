@@ -13,3 +13,5 @@ $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 $<INSTALL_INTERFACE:.>)
 
 add_library(net::net ALIAS net)
+
+# vim: set ts=4 sw=4 :
