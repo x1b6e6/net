@@ -131,6 +131,17 @@ class Net : NetBase<Ss...> {
 
    private:
 	std::array<float, data_size> data;
+	template <typename IStream>
+	friend IStream& operator>>(IStream& s, Net<Ss...>& n) {
+		return s.read(reinterpret_cast<char*>(n.data.data()),
+					  net::Net<Ss...>::data_size * sizeof(float));
+	}
+
+	template <typename OStream>
+	friend OStream& operator<<(OStream& s, const Net<Ss...>& n) {
+		return s.write(reinterpret_cast<const char*>(n.data.data()),
+					   net::Net<Ss...>::data_size * sizeof(float));
+	}
 };
 }  // namespace net
 
