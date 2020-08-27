@@ -138,8 +138,9 @@ class SimpleNet {
 
 	constexpr static auto data_size = layer_type::data_size;
 
-	constexpr SimpleNet() : layer(data) {}
+	constexpr SimpleNet() : data(new store_type[data_size]), layer(data) {}
 	constexpr SimpleNet(const SimpleNet& other) : SimpleNet() { *this = other; }
+	constexpr ~SimpleNet() { delete[] data; }
 
 	constexpr result_type operator()(const feed_type& data) {
 		return layer(data);
@@ -163,8 +164,8 @@ class SimpleNet {
 	void rand() {
 		std::random_device rd;
 		std::uniform_real_distribution<store_type> rand;
-		for (auto& n : data) {
-			n = rand(rd);
+		for (std::size_t i = 0; i < data_size; ++i) {
+			data[i] = rand(rd);
 		}
 	}
 
@@ -203,8 +204,8 @@ class SimpleNet {
 	}
 
    private:
+	store_type* data;
 	layer_type layer;
-	store_type data[data_size];
 	template <typename IStream>
 	friend IStream& operator>>(IStream& s, SimpleNet<Ss...>& n) {
 		return s.read(reinterpret_cast<char*>(n.data),
