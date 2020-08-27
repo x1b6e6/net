@@ -20,7 +20,7 @@ constexpr T diff(const std::span<T, S>& a, const std::span<T, S>& b) {
 }
 
 int main() {
-	using net_type = net::Net<2, 3, 2>;
+	using net_type = net::SimpleNet<2, 3, 2>;
 	using tuple_type = std::tuple<float, net_type>;
 
 	constexpr auto to_use = 25;

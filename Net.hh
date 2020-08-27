@@ -129,7 +129,7 @@ class Layer<IN, OUT, Ss...> {
 }  // namespace
 
 template <std::size_t... Ss>
-class Net {
+class SimpleNet {
 	using layer_type = Layer<Ss...>;
 
    public:
@@ -138,24 +138,24 @@ class Net {
 
 	constexpr static auto data_size = layer_type::data_size;
 
-	constexpr Net() : layer(data) {}
-	constexpr Net(const Net& other) : Net() { *this = other; }
+	constexpr SimpleNet() : layer(data) {}
+	constexpr SimpleNet(const SimpleNet& other) : SimpleNet() { *this = other; }
 
 	constexpr result_type operator()(const feed_type& data) {
 		return layer(data);
 	}
 
-	constexpr Net& operator=(const Net& other) {
+	constexpr SimpleNet& operator=(const SimpleNet& other) {
 		std::memcpy(data, other.data, data_size * sizeof(store_type));
 
 		return *this;
 	}
 
-	Net operator+(const Net& other) const { return merge(other); }
-	Net& operator+(int mut) { return mutation(mut); }
-	Net& operator++() { return mutation(); }
-	Net operator++(int z) const {
-		Net o{*this};
+	SimpleNet operator+(const SimpleNet& other) const { return merge(other); }
+	SimpleNet& operator+(int mut) { return mutation(mut); }
+	SimpleNet& operator++() { return mutation(); }
+	SimpleNet operator++(int z) const {
+		SimpleNet o{*this};
 		mutation(z ? z : 1);
 		return o;
 	}
@@ -168,8 +168,8 @@ class Net {
 		}
 	}
 
-	Net merge(const Net& other) const {
-		Net o(*this);
+	SimpleNet merge(const SimpleNet& other) const {
+		SimpleNet o(*this);
 
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
@@ -188,7 +188,7 @@ class Net {
 		return o;
 	}
 
-	Net& mutation(std::size_t count = 1) {
+	SimpleNet& mutation(std::size_t count = 1) {
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
 			0, layer_type::data_size - 1);
@@ -206,15 +206,15 @@ class Net {
 	layer_type layer;
 	store_type data[data_size];
 	template <typename IStream>
-	friend IStream& operator>>(IStream& s, Net<Ss...>& n) {
+	friend IStream& operator>>(IStream& s, SimpleNet<Ss...>& n) {
 		return s.read(reinterpret_cast<char*>(n.data),
-					  net::Net<Ss...>::data_size * sizeof(store_type));
+					  net::SimpleNet<Ss...>::data_size * sizeof(store_type));
 	}
 
 	template <typename OStream>
-	friend OStream& operator<<(OStream& s, const Net<Ss...>& n) {
+	friend OStream& operator<<(OStream& s, const SimpleNet<Ss...>& n) {
 		return s.write(reinterpret_cast<const char*>(n.data),
-					   net::Net<Ss...>::data_size * sizeof(store_type));
+					   net::SimpleNet<Ss...>::data_size * sizeof(store_type));
 	}
 };
 }  // namespace net
