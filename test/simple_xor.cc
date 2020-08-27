@@ -26,6 +26,7 @@ int main() {
 	constexpr auto to_use = 25;
 	constexpr auto nets_size = to_use * to_use;
 	constexpr auto max_generations = 10000;
+	constexpr auto max_error = 2.f;
 
 	std::array<tuple_type, nets_size> nets;
 
@@ -55,7 +56,7 @@ int main() {
 					  return std::get<float>(a) < std::get<float>(b);
 				  });
 		auto min_error = std::get<float>(nets[0]);
-		if (min_error < 1.f)
+		if (min_error <= max_error)
 			break;
 		for (size_t i = 0; i < to_use; ++i) {
 			for (size_t j = i + 1; j < to_use; ++j) {
@@ -70,6 +71,7 @@ int main() {
 		}
 	}
 	assert(generation != max_generations);
+	assert(generation > 10);
 
 	return 0;
 }
