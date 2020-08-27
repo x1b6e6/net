@@ -88,8 +88,9 @@ class Layer<IN, OUT> {
 
 template <std::size_t IN, std::size_t OUT, std::size_t... Ss>
 class Layer<IN, OUT, Ss...> {
-   public:
 	using next_layer_type = Layer<OUT, Ss...>;
+
+   public:
 	using neuron_type = Neuron<IN>;
 	using feed_type = typename neuron_type::feed_type;
 	using result_type = typename next_layer_type::result_type;
