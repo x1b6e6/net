@@ -264,6 +264,13 @@ requires(size_length<Ss...>::value >= 2) class Net {
 		nets.resize(nets_size);
 	}
 
+	Net& rand() {
+		for (auto& n : nets) {
+			auto& nn = std::get<net_type>(n);
+			nn.rand();
+		}
+	}
+
 	constexpr Net& feed(const feed_type& data) {
 		/* TODO: add multithreading */
 		for (auto& n : nets) {
@@ -282,7 +289,6 @@ requires(size_length<Ss...>::value >= 2) class Net {
 			auto& score = std::get<score_type>(n);
 			const auto& res = std::get<result_type>(n);
 
-			// score = sigmoid(score + fn(res));
 			score += fn(res);
 		}
 		return *this;
