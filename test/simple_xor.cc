@@ -1,33 +1,30 @@
 #include <algorithm>
 #include <cassert>
+#include <iostream>
 #include <span>
 #include <tuple>
 
 #include <Net.hh>
 
-template <typename T>
-constexpr T abs(T x) {
-	return x > T{} ? x : -x;
-}
+using net_type = net::SimpleNet<2, 3, 2>;
+using tuple_type = std::tuple<float, net_type>;
 
-template <typename T, size_t S>
-constexpr T diff(const std::span<T, S>& a, const std::span<T, S>& b) {
-	T o{};
-	for (size_t i = 0; i < S; ++i) {
-		o += abs(a[i] - b[i]);
-	}
-	return o;
-}
+constexpr auto to_use = 25;
+constexpr auto max_generations = 10000;
+constexpr auto min_score =
+	7.5f; /* maximum score is (is_true{1} + is_false{1}) * tests{4} = 8 */
+
+constexpr auto nets_size = to_use * to_use;
+
+auto check_true(const net_type::result_type& res) {
+	return res[0] - res[1];
+};
+
+auto check_false(const net_type::result_type& res) {
+	return res[1] - res[0];
+};
 
 int main() {
-	using net_type = net::SimpleNet<2, 3, 2>;
-	using tuple_type = std::tuple<float, net_type>;
-
-	constexpr auto to_use = 25;
-	constexpr auto nets_size = to_use * to_use;
-	constexpr auto max_generations = 10000;
-	constexpr auto max_error = 2.f;
-
 	std::array<tuple_type, nets_size> nets;
 
 	for (auto& n : nets) {
@@ -37,26 +34,33 @@ int main() {
 	net_type::feed_type xor_data_in[4] = {
 		{0.f, 0.f}, {0.f, 1.f}, {1.f, 0.f}, {1.f, 1.f}};
 
-	net_type::result_type xor_data_out[4] = {
-		{0.f, 1.f}, {1.f, 0.f}, {1.f, 0.f}, {0.f, 1.f}};
-
 	size_t generation;
 	for (generation = 1; generation < max_generations; ++generation) {
 		for (auto& n : nets) {
 			auto& result = std::get<float>(n);
 			auto& nn = std::get<net_type>(n);
 			result = 0.f;
-			for (size_t i = 0; i < 4; ++i) {
-				auto res = nn(xor_data_in[i]);
-				result += diff(std::span{res}, std::span{xor_data_out[i]});
-			}
+			net_type::result_type res;
+
+			res = nn(xor_data_in[0]);
+			result += check_false(res);
+
+			res = nn(xor_data_in[1]);
+			result += check_true(res);
+
+			res = nn(xor_data_in[2]);
+			result += check_true(res);
+
+			res = nn(xor_data_in[3]);
+			result += check_false(res);
 		}
 		std::sort(std::begin(nets), std::end(nets),
 				  [](const tuple_type& a, const tuple_type& b) {
-					  return std::get<float>(a) < std::get<float>(b);
+					  return std::get<float>(a) > std::get<float>(b);
 				  });
-		auto min_error = std::get<float>(nets[0]);
-		if (min_error <= max_error)
+		auto score = std::get<float>(nets[0]);
+		std::cout << score << '\n';
+		if (score >= min_score)
 			break;
 		for (size_t i = 0; i < to_use; ++i) {
 			for (size_t j = i + 1; j < to_use; ++j) {
@@ -65,13 +69,11 @@ int main() {
 				auto& parent1 = std::get<net_type>(nets[i]);
 				auto& parent2 = std::get<net_type>(nets[j]);
 
-				child =
-					parent1 + parent2 + (static_cast<int>(min_error) * 2 + 1);
+				child = parent1 + parent2 + 5;
 			}
 		}
 	}
 	assert(generation != max_generations);
-	assert(generation > 10);
 
 	return 0;
 }
