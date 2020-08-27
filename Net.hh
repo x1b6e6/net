@@ -65,7 +65,7 @@ class Net : NetBase<Ss...> {
 
 	constexpr static auto data_size = base_type::data_size;
 
-	constexpr Net() : data(), base_type(data.data()) {}
+	constexpr Net() : base_type(data) {}
 	constexpr Net(const Net& other) : Net() { *this = other; }
 
 	constexpr auto operator()(
@@ -74,7 +74,8 @@ class Net : NetBase<Ss...> {
 	}
 
 	constexpr Net& operator=(const Net& other) {
-		data = other.data;
+		std::memcpy(data, other.data, data_size * sizeof(float));
+
 		return *this;
 	}
 
@@ -106,11 +107,10 @@ class Net : NetBase<Ss...> {
 		auto l = rand_index(rd);
 		if (l > r)
 			std::swap(l, r);
-		std::memcpy(o.data.data() + 0, data.data() + 0, l * sizeof(float));
-		std::memcpy(o.data.data() + r, data.data() + r,
+		std::memcpy(o.data + 0, data + 0, l * sizeof(float));
+		std::memcpy(o.data + r, data + r,
 					(base_type::data_size - r) * sizeof(float));
-		std::memcpy(o.data.data() + l, other.data.data() + l,
-					(r - l) * sizeof(float));
+		std::memcpy(o.data + l, other.data + l, (r - l) * sizeof(float));
 
 		return o;
 	}
@@ -130,16 +130,16 @@ class Net : NetBase<Ss...> {
 	}
 
    private:
-	std::array<float, data_size> data;
+	float data[data_size];
 	template <typename IStream>
 	friend IStream& operator>>(IStream& s, Net<Ss...>& n) {
-		return s.read(reinterpret_cast<char*>(n.data.data()),
+		return s.read(reinterpret_cast<char*>(n.data),
 					  net::Net<Ss...>::data_size * sizeof(float));
 	}
 
 	template <typename OStream>
 	friend OStream& operator<<(OStream& s, const Net<Ss...>& n) {
-		return s.write(reinterpret_cast<const char*>(n.data.data()),
+		return s.write(reinterpret_cast<const char*>(n.data),
 					   net::Net<Ss...>::data_size * sizeof(float));
 	}
 };
