@@ -11,21 +11,25 @@ namespace {
 template <std::size_t...>
 class NetBase;
 
-template <std::size_t IN>
-class NetBase<IN> {
+template <std::size_t IN, std::size_t OUT>
+class NetBase<IN, OUT> {
    public:
-	using result_type = std::array<float, IN>;
+	using layer_type = Layer<IN, OUT>;
+	using result_type = typename layer_type::result_type;
+	using feed_type = typename layer_type::feed_type;
 
 	constexpr static auto in_size = IN;
-	constexpr static auto out_size = IN;
-	constexpr static auto data_size = 0;
+	constexpr static auto out_size = OUT;
+	constexpr static auto data_size = layer_type::data_size;
 
-	constexpr NetBase(float*) {}
+	constexpr NetBase(store_type* data) : layer(data) {}
 
-	constexpr std::array<float, IN> operator()(
-		const std::array<float, IN>& data) const {
-		return data;
+	constexpr result_type operator()(const feed_type& data) const {
+		return layer(data);
 	}
+
+   private:
+	layer_type layer;
 };
 
 template <std::size_t IN, std::size_t OUT, std::size_t... Ss>
@@ -34,19 +38,18 @@ class NetBase<IN, OUT, Ss...> : NetBase<OUT, Ss...> {
 	using base_type = NetBase<OUT, Ss...>;
 	using layer_type = Layer<IN, OUT>;
 	using result_type = typename base_type::result_type;
-	using feed_type = std::array<float, IN>;
+	using feed_type = typename layer_type::feed_type;
 
 	constexpr static auto in_size = IN;
 	constexpr static auto out_size = IN;
 	constexpr static auto data_size =
 		layer_type::data_size + base_type::data_size;
 
-	constexpr NetBase(float* data)
+	constexpr NetBase(store_type* data)
 		: layer(data), base_type(data + layer_type::data_size) {}
 
-	constexpr auto operator()(const std::array<float, IN>& data) const {
-		return static_cast<const base_type*>(this)->operator()(
-			reinterpret_cast<const layer_type*>(this)->operator()(data));
+	constexpr result_type operator()(const feed_type& data) const {
+		return static_cast<const base_type*>(this)->operator()(layer(data));
 	}
 
    private:
@@ -68,13 +71,12 @@ class Net : NetBase<Ss...> {
 	constexpr Net() : base_type(data) {}
 	constexpr Net(const Net& other) : Net() { *this = other; }
 
-	constexpr auto operator()(
-		const std::array<float, base_type::in_size>& data) {
+	constexpr result_type operator()(const feed_type& data) {
 		return static_cast<base_type*>(this)->operator()(data);
 	}
 
 	constexpr Net& operator=(const Net& other) {
-		std::memcpy(data, other.data, data_size * sizeof(float));
+		std::memcpy(data, other.data, data_size * sizeof(store_type));
 
 		return *this;
 	}
@@ -90,7 +92,7 @@ class Net : NetBase<Ss...> {
 
 	void rand() {
 		std::random_device rd;
-		std::uniform_real_distribution<float> rand;
+		std::uniform_real_distribution<store_type> rand;
 		for (auto& n : data) {
 			n = rand(rd);
 		}
@@ -107,10 +109,11 @@ class Net : NetBase<Ss...> {
 		auto l = rand_index(rd);
 		if (l > r)
 			std::swap(l, r);
-		std::memcpy(o.data + 0, data + 0, l * sizeof(float));
+
+		std::memcpy(o.data + 0, data + 0, l * sizeof(store_type));
 		std::memcpy(o.data + r, data + r,
-					(base_type::data_size - r) * sizeof(float));
-		std::memcpy(o.data + l, other.data + l, (r - l) * sizeof(float));
+					(base_type::data_size - r) * sizeof(store_type));
+		std::memcpy(o.data + l, other.data + l, (r - l) * sizeof(store_type));
 
 		return o;
 	}
@@ -119,9 +122,9 @@ class Net : NetBase<Ss...> {
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
 			0, base_type::data_size - 1);
-		std::uniform_real_distribution<float> rand_mutation(-50.f, 50.f);
+		std::uniform_real_distribution<store_type> rand_mutation(-50.f, 50.f);
 
-		for (int i = 0; i < count; ++i) {
+		for (std::size_t i = 0; i < count; ++i) {
 			auto mut_idx = rand_index(rd);
 			data[mut_idx] += rand_mutation(rd);
 		}
@@ -130,17 +133,17 @@ class Net : NetBase<Ss...> {
 	}
 
    private:
-	float data[data_size];
+	store_type data[data_size];
 	template <typename IStream>
 	friend IStream& operator>>(IStream& s, Net<Ss...>& n) {
 		return s.read(reinterpret_cast<char*>(n.data),
-					  net::Net<Ss...>::data_size * sizeof(float));
+					  net::Net<Ss...>::data_size * sizeof(store_type));
 	}
 
 	template <typename OStream>
 	friend OStream& operator<<(OStream& s, const Net<Ss...>& n) {
 		return s.write(reinterpret_cast<const char*>(n.data),
-					   net::Net<Ss...>::data_size * sizeof(float));
+					   net::Net<Ss...>::data_size * sizeof(store_type));
 	}
 };
 }  // namespace net

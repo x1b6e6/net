@@ -1,8 +1,7 @@
 #include <algorithm>
 #include <cassert>
+#include <span>
 #include <tuple>
-
-#include <iostream>
 
 #include <Net.hh>
 
@@ -12,7 +11,7 @@ constexpr T abs(T x) {
 }
 
 template <typename T, size_t S>
-constexpr T diff(const std::array<T, S>& a, const std::array<T, S>& b) {
+constexpr T diff(const std::span<T, S>& a, const std::span<T, S>& b) {
 	T o{};
 	for (size_t i = 0; i < S; ++i) {
 		o += abs(a[i] - b[i]);
@@ -34,10 +33,10 @@ int main() {
 		std::get<net_type>(n).rand();
 	}
 
-	std::array<float, 2> xor_data_in[4] = {
+	net_type::feed_type xor_data_in[4] = {
 		{0.f, 0.f}, {0.f, 1.f}, {1.f, 0.f}, {1.f, 1.f}};
 
-	std::array<float, 2> xor_data_out[4] = {
+	net_type::result_type xor_data_out[4] = {
 		{0.f, 1.f}, {1.f, 0.f}, {1.f, 0.f}, {0.f, 1.f}};
 
 	size_t generation;
@@ -48,7 +47,7 @@ int main() {
 			result = 0.f;
 			for (size_t i = 0; i < 4; ++i) {
 				auto res = nn(xor_data_in[i]);
-				result += diff(res, xor_data_out[i]);
+				result += diff(std::span{res}, std::span{xor_data_out[i]});
 			}
 		}
 		std::sort(std::begin(nets), std::end(nets),
