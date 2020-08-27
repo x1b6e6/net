@@ -337,7 +337,7 @@ requires(size_length<Ss...>::value >= 2) class Net {
 		return *this;
 	}
 
-	constexpr result_type result() {
+	constexpr result_type result() const {
 		result_type o;
 
 		for (auto& n : nets) {
@@ -355,7 +355,7 @@ requires(size_length<Ss...>::value >= 2) class Net {
 		return o;
 	}
 
-	constexpr result_type best_result() {
+	constexpr result_type best_result() const {
 		return std::get<result_type>(nets[0]);
 	}
 
