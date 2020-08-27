@@ -10,10 +10,10 @@ namespace net {
 using store_type = float;
 
 namespace {
-constexpr float abs(float x) {
-	return x > 0.f ? x : -x;
+constexpr auto abs(auto x) {
+	return x > 0 ? x : -x;
 }
-constexpr float sigmoid(float x) {
+constexpr auto sigmoid(auto x) {
 	return x / (1 + abs(x));
 }
 
