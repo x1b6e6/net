@@ -131,10 +131,20 @@ class Layer<IN, OUT, Ss...> {
 	neuron_type neurons[OUT];
 };
 
+template <std::size_t... Ss>
+struct size_length;
+
+template <std::size_t S, std::size_t... Ss>
+struct size_length<S, Ss...>
+	: std::integral_constant<std::size_t, 1 + size_length<Ss...>::value> {};
+
+template <std::size_t S>
+struct size_length<S> : std::integral_constant<std::size_t, 1> {};
+
 }  // namespace
 
 template <std::size_t... Ss>
-class SimpleNet {
+requires(size_length<Ss...>::value >= 2) class SimpleNet {
    public:
 	using layer_type = Layer<Ss...>;
 	using result_type = typename layer_type::result_type;
