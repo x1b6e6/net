@@ -7,72 +7,21 @@
 
 namespace net {
 
-namespace {
-template <std::size_t...>
-class NetBase;
+template <std::size_t... Ss>
+class Net {
+	using layer_type = Layer<Ss...>;
 
-template <std::size_t IN, std::size_t OUT>
-class NetBase<IN, OUT> {
    public:
-	using layer_type = Layer<IN, OUT>;
 	using result_type = typename layer_type::result_type;
 	using feed_type = typename layer_type::feed_type;
 
-	constexpr static auto in_size = IN;
-	constexpr static auto out_size = OUT;
 	constexpr static auto data_size = layer_type::data_size;
 
-	constexpr NetBase(store_type* data) : layer(data) {}
-
-	constexpr result_type operator()(const feed_type& data) const {
-		return layer(data);
-	}
-
-   private:
-	layer_type layer;
-};
-
-template <std::size_t IN, std::size_t OUT, std::size_t... Ss>
-class NetBase<IN, OUT, Ss...> : NetBase<OUT, Ss...> {
-   public:
-	using base_type = NetBase<OUT, Ss...>;
-	using layer_type = Layer<IN, OUT>;
-	using result_type = typename base_type::result_type;
-	using feed_type = typename layer_type::feed_type;
-
-	constexpr static auto in_size = IN;
-	constexpr static auto out_size = IN;
-	constexpr static auto data_size =
-		layer_type::data_size + base_type::data_size;
-
-	constexpr NetBase(store_type* data)
-		: layer(data), base_type(data + layer_type::data_size) {}
-
-	constexpr result_type operator()(const feed_type& data) const {
-		return static_cast<const base_type*>(this)->operator()(layer(data));
-	}
-
-   private:
-	layer_type layer;
-};
-
-}  // namespace
-
-template <std::size_t... Ss>
-class Net : NetBase<Ss...> {
-	using base_type = NetBase<Ss...>;
-
-   public:
-	using result_type = typename base_type::result_type;
-	using feed_type = typename base_type::feed_type;
-
-	constexpr static auto data_size = base_type::data_size;
-
-	constexpr Net() : base_type(data) {}
+	constexpr Net() : layer(data) {}
 	constexpr Net(const Net& other) : Net() { *this = other; }
 
 	constexpr result_type operator()(const feed_type& data) {
-		return static_cast<base_type*>(this)->operator()(data);
+		return layer(data);
 	}
 
 	constexpr Net& operator=(const Net& other) {
@@ -103,7 +52,7 @@ class Net : NetBase<Ss...> {
 
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
-			0, base_type::data_size - 1);
+			0, layer_type::data_size - 1);
 
 		auto r = rand_index(rd);
 		auto l = rand_index(rd);
@@ -112,7 +61,7 @@ class Net : NetBase<Ss...> {
 
 		std::memcpy(o.data + 0, data + 0, l * sizeof(store_type));
 		std::memcpy(o.data + r, data + r,
-					(base_type::data_size - r) * sizeof(store_type));
+					(layer_type::data_size - r) * sizeof(store_type));
 		std::memcpy(o.data + l, other.data + l, (r - l) * sizeof(store_type));
 
 		return o;
@@ -121,7 +70,7 @@ class Net : NetBase<Ss...> {
 	Net& mutation(std::size_t count = 1) {
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
-			0, base_type::data_size - 1);
+			0, layer_type::data_size - 1);
 		std::uniform_real_distribution<store_type> rand_mutation(-50.f, 50.f);
 
 		for (std::size_t i = 0; i < count; ++i) {
@@ -133,6 +82,7 @@ class Net : NetBase<Ss...> {
 	}
 
    private:
+	layer_type layer;
 	store_type data[data_size];
 	template <typename IStream>
 	friend IStream& operator>>(IStream& s, Net<Ss...>& n) {
