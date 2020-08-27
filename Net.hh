@@ -51,6 +51,8 @@ class Layer<IN, OUT> {
 	using my_result_type = result_type;
 
 	constexpr static auto data_size = neuron_type::data_size * OUT;
+	constexpr static auto in_size = IN;
+	constexpr static auto out_size = OUT;
 
 	constexpr Layer(store_type* data = nullptr) {
 		if (data != nullptr) {
@@ -85,18 +87,21 @@ class Layer<IN, OUT> {
 template <std::size_t IN, std::size_t OUT, std::size_t... Ss>
 class Layer<IN, OUT, Ss...> {
    public:
-	using base_type = Layer<OUT, Ss...>;
+	using next_layer_type = Layer<OUT, Ss...>;
 	using neuron_type = Neuron<IN>;
 	using feed_type = typename neuron_type::feed_type;
-	using result_type = typename base_type::result_type;
+	using result_type = typename next_layer_type::result_type;
 	using my_result_type = std::array<typename neuron_type::result_type, OUT>;
 
 	constexpr static auto current_data_size = neuron_type::data_size * OUT;
-	constexpr static auto data_size = base_type::data_size + current_data_size;
+	constexpr static auto data_size =
+		next_layer_type::data_size + current_data_size;
+	constexpr static auto in_size = IN;
+	constexpr static auto out_size = next_layer_type::out_size;
 
 	constexpr Layer(store_type* data = nullptr) {
 		if (data != nullptr) {
-			base = base_type(data + current_data_size);
+			next_layer = next_layer_type(data + current_data_size);
 			for (std::size_t i = 0; i < OUT; ++i) {
 				neurons[i] = neuron_type(data);
 				data += neuron_type::data_size;
@@ -118,11 +123,11 @@ class Layer<IN, OUT, Ss...> {
 			o[i] = neurons[i](data);
 		}
 
-		return base(o);
+		return next_layer(o);
 	}
 
    private:
-	base_type base;
+	next_layer_type next_layer;
 	neuron_type neurons[OUT];
 };
 
@@ -130,13 +135,14 @@ class Layer<IN, OUT, Ss...> {
 
 template <std::size_t... Ss>
 class SimpleNet {
-	using layer_type = Layer<Ss...>;
-
    public:
+	using layer_type = Layer<Ss...>;
 	using result_type = typename layer_type::result_type;
 	using feed_type = typename layer_type::feed_type;
 
 	constexpr static auto data_size = layer_type::data_size;
+	constexpr static auto in_size = layer_type::in_size;
+	constexpr static auto out_size = layer_type::out_size;
 
 	constexpr SimpleNet() : data(new store_type[data_size]), layer(data) {}
 	constexpr SimpleNet(const SimpleNet& other) : SimpleNet() { *this = other; }
@@ -206,6 +212,7 @@ class SimpleNet {
    private:
 	store_type* data;
 	layer_type layer;
+
 	template <typename IStream>
 	friend IStream& operator>>(IStream& s, SimpleNet<Ss...>& n) {
 		return s.read(reinterpret_cast<char*>(n.data),
