@@ -11,5 +11,6 @@ function (new_test name)
 endfunction()
 
 new_test(simple_xor)
+new_test(net_xor)
 
 # vim: set ts=4 sw=4 :

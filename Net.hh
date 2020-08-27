@@ -2,7 +2,9 @@
 
 #include <array>
 #include <cstring>
+#include <functional>
 #include <random>
+#include <stdexcept>
 
 namespace net {
 using store_type = float;
@@ -235,6 +237,127 @@ requires(size_length<Ss...>::value >= 2) class SimpleNet {
 					   net::SimpleNet<Ss...>::data_size * sizeof(store_type));
 	}
 };
+
+template <std::size_t... Ss>
+requires(size_length<Ss...>::value >= 2) class Net {
+   public:
+	using net_type = SimpleNet<Ss...>;
+	using score_type = store_type;
+	using result_type = typename net_type::result_type;
+	using feed_type = typename net_type::feed_type;
+
+	struct tuple_type : std::tuple<score_type, net_type, result_type> {
+		friend constexpr auto operator<=>(const tuple_type& a,
+										  const tuple_type& b) {
+			return std::get<score_type>(a) <=> std::get<score_type>(b);
+		}
+	};
+
+	constexpr static auto in_size = net_type::in_size;
+	constexpr static auto out_size = net_type::out_size;
+
+	constexpr Net(std::size_t to_use_)
+		: to_use(to_use_), nets_size(to_use_ * to_use_) {
+		if (to_use < 3) {
+			throw std::invalid_argument{"net::Net to_use should be >=2"};
+		}
+		nets.resize(nets_size);
+	}
+
+	constexpr Net& feed(const feed_type& data) {
+		/* TODO: add multithreading */
+		for (auto& n : nets) {
+			auto& nn = std::get<net_type>(n);
+			auto& res = std::get<result_type>(n);
+
+			res = nn(data);
+		}
+		return *this;
+	}
+
+	template <typename Fn>
+	constexpr Net& count_score(Fn fn) {
+		/* TODO: add multithreading */
+		for (auto& n : nets) {
+			auto& score = std::get<score_type>(n);
+			const auto& res = std::get<result_type>(n);
+
+			// score = sigmoid(score + fn(res));
+			score += fn(res);
+		}
+		return *this;
+	}
+
+	template <template <typename> typename Compare = std::greater>
+	constexpr Net& next(int mutation = 2,
+						Compare<tuple_type> comp = Compare<tuple_type>()) {
+		std::sort(std::begin(nets), std::end(nets), comp);
+
+		for (std::size_t i = 0; i < to_use; ++i) {
+			for (std::size_t j = i + 1; j < to_use; ++j) {
+				std::size_t child_id = to_use - 1 + to_use * i + j;
+
+				auto& child = std::get<net_type>(nets[child_id]);
+				auto& parent1 = std::get<net_type>(nets[i]);
+				auto& parent2 = std::get<net_type>(nets[j]);
+
+				child = parent1 + parent2 + mutation;
+			}
+		}
+
+		return *this;
+	}
+
+	template <template <typename> typename Compare = std::greater>
+	constexpr score_type best_score(Compare<score_type> comp = {}) const {
+		score_type best = std::get<score_type>(nets[0]);
+
+		for (auto& n : nets) {
+			auto& score = std::get<score_type>(n);
+			if (comp(score, best)) {
+				best = score;
+			}
+		}
+
+		return best;
+	}
+
+	constexpr Net& reset_score() {
+		/* TODO: add multithreading */
+		for (auto& n : nets) {
+			std::get<score_type>(n) = score_type{};
+		}
+		return *this;
+	}
+
+	constexpr result_type result() {
+		result_type o;
+
+		for (auto& n : nets) {
+			const auto& res = std::get<result_type>(n);
+			/* TODO: add multithreading */
+			for (std::size_t i = 0; i < out_size; ++i) {
+				o[i] += res[i];
+			}
+		}
+		/* TODO: add multithreading */
+		for (std::size_t i = 0; i < out_size; ++i) {
+			o[i] /= nets_size;
+		}
+
+		return o;
+	}
+
+	constexpr result_type best_result() {
+		return std::get<result_type>(nets[0]);
+	}
+
+   private:
+	const std::size_t to_use;
+	const std::size_t nets_size;
+	std::vector<tuple_type> nets;
+};
+
 }  // namespace net
 
 // vim: set ts=4 sw=4 :
