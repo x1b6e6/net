@@ -9,4 +9,7 @@ $<INSTALL_INTERFACE:.>)
 
 add_library(net::net ALIAS net)
 
+enable_testing()
+add_subdirectory(test)
+
 # vim: set ts=4 sw=4 :
