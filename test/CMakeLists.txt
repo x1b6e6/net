@@ -10,7 +10,9 @@ function (new_test name)
 	add_dependencies(tests test_${name})
 endfunction()
 
+new_test(simple_functions)
 new_test(simple_xor)
+new_test(net_functions)
 new_test(net_xor)
 
 # vim: set ts=4 sw=4 :
