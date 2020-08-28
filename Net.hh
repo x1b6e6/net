@@ -95,7 +95,7 @@ class Layer<IN, OUT, Ss...> {
 	constexpr static auto out_size = next_layer_type::out_size;
 
 	constexpr Layer(store_type* data)
-		: neurons(reinterpret_cast<neuron_type*>(operator new(
+		: neurons(reinterpret_cast<neuron_type*>(operator new[](
 			  OUT * sizeof(neuron_type)))) {
 		for (std::size_t i = 0; i < OUT; ++i) {
 			new (neurons + i) neuron_type(data);
