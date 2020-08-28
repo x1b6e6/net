@@ -179,7 +179,7 @@ requires(size_length<Ss...>::value >= 2) class SimpleNet {
 	SimpleNet operator+(const SimpleNet& other) const { return merge(other); }
 	SimpleNet& operator+(int mut) { return mutation(mut); }
 	SimpleNet& operator++() { return mutation(); }
-	SimpleNet operator++(int z) const {
+	SimpleNet operator++(int z) {
 		SimpleNet o{*this};
 		mutation(z ? z : 1);
 		return o;
@@ -231,15 +231,17 @@ requires(size_length<Ss...>::value >= 2) class SimpleNet {
 	store_type* data;
 	layer_type layer;
 
-	template <typename IStream>
-	friend IStream& operator>>(IStream& s, SimpleNet<Ss...>& n) {
-		return s.read(reinterpret_cast<char*>(n.data),
+	template <typename Tchar>
+	friend std::basic_istream<Tchar>& operator>>(std::basic_istream<Tchar>& s,
+												 SimpleNet<Ss...>& n) {
+		return s.read(reinterpret_cast<Tchar*>(n.data),
 					  net::SimpleNet<Ss...>::data_size * sizeof(store_type));
 	}
 
-	template <typename OStream>
-	friend OStream& operator<<(OStream& s, const SimpleNet<Ss...>& n) {
-		return s.write(reinterpret_cast<const char*>(n.data),
+	template <typename Tchar>
+	friend std::basic_ostream<Tchar>& operator<<(std::basic_ostream<Tchar>& s,
+												 const SimpleNet<Ss...>& n) {
+		return s.write(reinterpret_cast<const Tchar*>(n.data),
 					   net::SimpleNet<Ss...>::data_size * sizeof(store_type));
 	}
 };
@@ -281,11 +283,12 @@ requires(size_length<Ss...>::value >= 2) class Net {
 		return true;
 	}
 
-	Net& rand() {
+	constexpr Net& rand() {
 		for (auto& n : nets) {
 			auto& nn = std::get<net_type>(n);
 			nn.rand();
 		}
+		return *this;
 	}
 
 	constexpr Net& feed(const feed_type& data) {
