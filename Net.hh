@@ -27,8 +27,6 @@ class Neuron {
 
 	constexpr Neuron(store_type* data = nullptr) : ndata(data) {}
 
-	constexpr void operator=(const Neuron& other) { ndata = other.ndata; }
-
 	constexpr result_type operator()(const feed_type& data) const {
 		result_type o = 0.f;
 		for (std::size_t i = 0; i < IN; ++i) {
@@ -65,13 +63,6 @@ class Layer<IN, OUT> {
 		}
 	}
 	constexpr ~Layer() { operator delete[](neurons); }
-
-	constexpr Layer& operator=(const Layer& other) {
-		for (std::size_t i = 0; i < OUT; ++i) {
-			neurons[i] = other.neurons[i];
-		}
-		return *this;
-	}
 
 	constexpr result_type operator()(const feed_type& data) const {
 		result_type o{};
@@ -116,13 +107,6 @@ class Layer<IN, OUT, Ss...> {
 	constexpr ~Layer() {
 		operator delete[](neurons);
 		delete next_layer;
-	}
-
-	constexpr Layer& operator=(const Layer& other) {
-		for (std::size_t i = 0; i < OUT; ++i) {
-			neurons[i] = other.neurons[i];
-		}
-		return *this;
 	}
 
 	result_type operator()(const feed_type& data) const {
