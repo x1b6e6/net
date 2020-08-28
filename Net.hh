@@ -56,12 +56,10 @@ class Layer<IN, OUT> {
 	constexpr static auto in_size = IN;
 	constexpr static auto out_size = OUT;
 
-	constexpr Layer(store_type* data = nullptr) {
-		if (data != nullptr) {
-			for (std::size_t i = 0; i < OUT; ++i) {
-				neurons[i] = neuron_type(data);
-				data += neuron_type::data_size;
-			}
+	constexpr Layer(store_type* data) {
+		for (std::size_t i = 0; i < OUT; ++i) {
+			neurons[i] = neuron_type(data);
+			data += neuron_type::data_size;
 		}
 	}
 
@@ -102,13 +100,11 @@ class Layer<IN, OUT, Ss...> {
 	constexpr static auto in_size = IN;
 	constexpr static auto out_size = next_layer_type::out_size;
 
-	constexpr Layer(store_type* data = nullptr) {
-		if (data != nullptr) {
-			next_layer = next_layer_type(data + current_data_size);
-			for (std::size_t i = 0; i < OUT; ++i) {
-				neurons[i] = neuron_type(data);
-				data += neuron_type::data_size;
-			}
+	constexpr Layer(store_type* data) {
+		next_layer = next_layer_type(data + current_data_size);
+		for (std::size_t i = 0; i < OUT; ++i) {
+			neurons[i] = neuron_type(data);
+			data += neuron_type::data_size;
 		}
 	}
 
