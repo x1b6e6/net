@@ -23,6 +23,7 @@ int main() {
 	auto c = n.best_score();
 	auto d = n.result();
 	auto e = n.best_result();
+	auto f = n.score();
 
 	return 0;
 }

@@ -322,6 +322,16 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return *this;
 	}
 
+	constexpr score_type score() const {
+		score_type o{};
+
+		for (auto& n : nets) {
+			o += std::get<score_type>(n);
+		}
+
+		return o / nets_size;
+	}
+
 	template <template <typename> typename Compare = std::greater>
 	constexpr score_type best_score(Compare<score_type> comp = {}) const {
 		score_type best = std::get<score_type>(nets[0]);
