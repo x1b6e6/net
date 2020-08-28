@@ -56,12 +56,15 @@ class Layer<IN, OUT> {
 	constexpr static auto in_size = IN;
 	constexpr static auto out_size = OUT;
 
-	constexpr Layer(store_type* data) {
+	constexpr Layer(store_type* data)
+		: neurons(reinterpret_cast<neuron_type*>(operator new[](
+			  OUT * sizeof(neuron_type)))) {
 		for (std::size_t i = 0; i < OUT; ++i) {
-			neurons[i] = neuron_type(data);
+			new (neurons + i) neuron_type(data);
 			data += neuron_type::data_size;
 		}
 	}
+	constexpr ~Layer() { operator delete[](neurons); }
 
 	constexpr Layer& operator=(const Layer& other) {
 		for (std::size_t i = 0; i < OUT; ++i) {
@@ -81,7 +84,7 @@ class Layer<IN, OUT> {
 	}
 
    private:
-	neuron_type neurons[OUT];
+	neuron_type* neurons;
 };
 
 template <std::size_t IN, std::size_t OUT, std::size_t... Ss>
@@ -100,12 +103,19 @@ class Layer<IN, OUT, Ss...> {
 	constexpr static auto in_size = IN;
 	constexpr static auto out_size = next_layer_type::out_size;
 
-	constexpr Layer(store_type* data) {
-		next_layer = next_layer_type(data + current_data_size);
+	constexpr Layer(store_type* data)
+		: neurons(reinterpret_cast<neuron_type*>(operator new(
+			  OUT * sizeof(neuron_type)))) {
 		for (std::size_t i = 0; i < OUT; ++i) {
-			neurons[i] = neuron_type(data);
+			new (neurons + i) neuron_type(data);
 			data += neuron_type::data_size;
 		}
+		next_layer = new next_layer_type(data);
+	}
+
+	constexpr ~Layer() {
+		operator delete[](neurons);
+		delete next_layer;
 	}
 
 	constexpr Layer& operator=(const Layer& other) {
@@ -122,12 +132,12 @@ class Layer<IN, OUT, Ss...> {
 			o[i] = neurons[i](data);
 		}
 
-		return next_layer(o);
+		return next_layer->operator()(o);
 	}
 
    private:
-	next_layer_type next_layer;
-	neuron_type neurons[OUT];
+	next_layer_type* next_layer;
+	neuron_type* neurons;
 };
 }  // namespace
 
@@ -142,12 +152,18 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 	constexpr static auto in_size = layer_type::in_size;
 	constexpr static auto out_size = layer_type::out_size;
 
-	constexpr SimpleNet() : data(new store_type[data_size]), layer(data) {}
+	constexpr SimpleNet()
+		: data(new store_type[data_size]), layer(new layer_type(data)) {}
+
 	constexpr SimpleNet(const SimpleNet& other) : SimpleNet() { *this = other; }
-	constexpr ~SimpleNet() { delete[] data; }
+
+	constexpr ~SimpleNet() {
+		delete layer;
+		delete[] data;
+	}
 
 	constexpr result_type operator()(const feed_type& data) {
-		return layer(data);
+		return layer->operator()(data);
 	}
 
 	constexpr SimpleNet& operator=(const SimpleNet& other) {
@@ -162,8 +178,11 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 	}
 
 	SimpleNet operator+(const SimpleNet& other) const { return merge(other); }
+
 	SimpleNet& operator+(int mut) { return mutation(mut); }
+
 	SimpleNet& operator++() { return mutation(); }
+
 	SimpleNet operator++(int z) {
 		SimpleNet o{*this};
 		mutation(z ? z : 1);
@@ -214,7 +233,7 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 
    private:
 	store_type* data;
-	layer_type layer;
+	layer_type* layer;
 
 	template <typename Tchar>
 	friend std::basic_istream<Tchar>& operator>>(std::basic_istream<Tchar>& s,
