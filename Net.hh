@@ -171,6 +171,11 @@ requires(size_length<Ss...>::value >= 2) class SimpleNet {
 		return *this;
 	}
 
+	constexpr bool operator==(const SimpleNet& other) const {
+		return 0 ==
+			   std::memcmp(data, other.data, data_size * sizeof(store_type));
+	}
+
 	SimpleNet operator+(const SimpleNet& other) const { return merge(other); }
 	SimpleNet& operator+(int mut) { return mutation(mut); }
 	SimpleNet& operator++() { return mutation(); }
@@ -263,6 +268,17 @@ requires(size_length<Ss...>::value >= 2) class Net {
 			throw std::invalid_argument{"net::Net to_use should be >=2"};
 		}
 		nets.resize(nets_size);
+	}
+
+	constexpr bool operator==(const Net& other) {
+		for (std::size_t i = 0; i < nets_size; ++i) {
+			auto n1 = std::get<net_type>(nets[i]);
+			auto n2 = std::get<net_type>(other.nets[i]);
+			if (n1 != n2) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	Net& rand() {
