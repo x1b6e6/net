@@ -259,8 +259,10 @@ requires(sizeof...(Ss) >= 2) class Net {
 	constexpr static auto in_size = net_type::in_size;
 	constexpr static auto out_size = net_type::out_size;
 
-	constexpr Net(std::size_t to_use_)
-		: to_use(to_use_), nets_size(to_use_ + compute_size(to_use_)) {
+	constexpr Net(std::size_t to_use_, std::size_t immutable_ = 0)
+		: to_use(to_use_),
+		  immutable(immutable_),
+		  nets_size(to_use_ + immutable_ + compute_size(to_use_)) {
 		if (to_use < 3) {
 			throw std::invalid_argument{"net::Net to_use should be >=2"};
 		}
@@ -314,7 +316,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 						Compare<tuple_type> comp = Compare<tuple_type>()) {
 		std::sort(std::begin(nets), std::end(nets), comp);
 
-		std::size_t child_id = to_use;
+		std::size_t child_id = to_use + immutable;
 
 		for (std::size_t i = 0; i < to_use; ++i) {
 			for (std::size_t j = i + 1; j < to_use; ++j) {
@@ -388,6 +390,7 @@ requires(sizeof...(Ss) >= 2) class Net {
    private:
 	const std::size_t to_use;
 	const std::size_t nets_size;
+	const std::size_t immutable;
 	std::vector<tuple_type> nets;
 };
 
