@@ -5,7 +5,7 @@ function (new_test name)
 	set_target_properties(test_${name} PROPERTIES 
 		CXX_STANDARD 20 
 		CXX_STANDARD_REQUIRED ON)
-	target_link_libraries(test_${name} net::net)
+	target_link_libraries(test_${name} net::net asan)
 	add_test(${name} test_${name})
 	add_dependencies(tests test_${name})
 endfunction()
