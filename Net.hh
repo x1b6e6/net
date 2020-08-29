@@ -123,6 +123,13 @@ class Layer<IN, OUT, Ss...> {
 	next_layer_type* next_layer;
 	neuron_type* neurons;
 };
+
+constexpr std::size_t compute_size(std::size_t to_use) {
+	if (to_use == 1)
+		return 0;
+
+	return (to_use - 1) + compute_size(to_use - 1);
+}
 }  // namespace
 
 template <std::size_t... Ss>
@@ -253,7 +260,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 	constexpr static auto out_size = net_type::out_size;
 
 	constexpr Net(std::size_t to_use_)
-		: to_use(to_use_), nets_size(to_use_ * to_use_) {
+		: to_use(to_use_), nets_size(to_use_ + compute_size(to_use_)) {
 		if (to_use < 3) {
 			throw std::invalid_argument{"net::Net to_use should be >=2"};
 		}
@@ -307,15 +314,17 @@ requires(sizeof...(Ss) >= 2) class Net {
 						Compare<tuple_type> comp = Compare<tuple_type>()) {
 		std::sort(std::begin(nets), std::end(nets), comp);
 
+		std::size_t child_id = to_use;
+
 		for (std::size_t i = 0; i < to_use; ++i) {
 			for (std::size_t j = i + 1; j < to_use; ++j) {
-				std::size_t child_id = to_use - 1 + to_use * i + j;
-
 				auto& child = std::get<net_type>(nets[child_id]);
 				auto& parent1 = std::get<net_type>(nets[i]);
 				auto& parent2 = std::get<net_type>(nets[j]);
 
 				child = parent1 + parent2 + mutation;
+
+				++child_id;
 			}
 		}
 
