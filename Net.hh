@@ -24,6 +24,8 @@ class Neuron {
 	using result_type = store_type;
 
 	constexpr static auto data_size = IN * 2;
+	constexpr static auto in_size = IN;
+	constexpr static auto out_size = 1;
 
 	constexpr Neuron(store_type* data = nullptr) : ndata(data) {}
 
@@ -44,14 +46,14 @@ class Layer;
 
 template <std::size_t IN, std::size_t OUT>
 class Layer<IN, OUT> {
-   public:
 	using neuron_type = Neuron<IN>;
+
+   public:
 	using feed_type = typename neuron_type::feed_type;
 	using result_type = std::array<typename neuron_type::result_type, OUT>;
-	using my_result_type = result_type;
 
 	constexpr static auto data_size = neuron_type::data_size * OUT;
-	constexpr static auto in_size = IN;
+	constexpr static auto in_size = neuron_type::in_size;
 	constexpr static auto out_size = OUT;
 
 	constexpr Layer(store_type* data)
@@ -65,6 +67,11 @@ class Layer<IN, OUT> {
 	constexpr ~Layer() { operator delete[](neurons); }
 
 	constexpr result_type operator()(const feed_type& data) const {
+		return proccess(data);
+	}
+
+   protected:
+	constexpr result_type proccess(const feed_type& data) const {
 		result_type o{};
 
 		for (std::size_t i = 0; i < OUT; ++i) {
@@ -79,49 +86,30 @@ class Layer<IN, OUT> {
 };
 
 template <std::size_t IN, std::size_t OUT, std::size_t... Ss>
-class Layer<IN, OUT, Ss...> {
+class Layer<IN, OUT, Ss...> : Layer<IN, OUT> {
+	using base_type = Layer<IN, OUT>;
 	using next_layer_type = Layer<OUT, Ss...>;
 
-   public:
-	using neuron_type = Neuron<IN>;
-	using feed_type = typename neuron_type::feed_type;
-	using result_type = typename next_layer_type::result_type;
-	using my_result_type = std::array<typename neuron_type::result_type, OUT>;
+	constexpr static auto base_data_size = base_type::data_size;
 
-	constexpr static auto current_data_size = neuron_type::data_size * OUT;
+   public:
+	using feed_type = typename base_type::feed_type;
+	using result_type = typename next_layer_type::result_type;
+
 	constexpr static auto data_size =
-		next_layer_type::data_size + current_data_size;
-	constexpr static auto in_size = IN;
+		base_type::data_size + next_layer_type::data_size;
+	constexpr static auto in_size = base_type::in_size;
 	constexpr static auto out_size = next_layer_type::out_size;
 
 	constexpr Layer(store_type* data)
-		: neurons(reinterpret_cast<neuron_type*>(operator new[](
-			  OUT * sizeof(neuron_type)))) {
-		for (std::size_t i = 0; i < OUT; ++i) {
-			new (neurons + i) neuron_type(data);
-			data += neuron_type::data_size;
-		}
-		next_layer = new next_layer_type(data);
-	}
+		: base_type(data), next_layer(data + base_data_size) {}
 
-	constexpr ~Layer() {
-		operator delete[](neurons);
-		delete next_layer;
-	}
-
-	result_type operator()(const feed_type& data) const {
-		my_result_type o{};
-
-		for (std::size_t i = 0; i < OUT; ++i) {
-			o[i] = neurons[i](data);
-		}
-
-		return next_layer->operator()(o);
+	constexpr result_type operator()(const feed_type& data) const {
+		return next_layer(this->proccess(data));
 	}
 
    private:
-	next_layer_type* next_layer;
-	neuron_type* neurons;
+	next_layer_type next_layer;
 };
 
 constexpr std::size_t compute_size(std::size_t to_use) {
