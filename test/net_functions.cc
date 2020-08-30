@@ -16,6 +16,7 @@ int main() {
 
 	n.feed(data);
 	n.count_score([](const net_type::result_type&) { return 0; });
+	n.next();
 	n.next<std::less>(5);
 
 	auto a = n.rand();
@@ -27,3 +28,5 @@ int main() {
 
 	return 0;
 }
+
+// vim: set ts=4 sw=4 :

@@ -38,12 +38,12 @@ int main() {
 		n.feed(xor_data_in[3]);
 		n.count_score(check_false);
 
-		auto score = n.best_score();
+		auto score = n.best_score<std::greater>();
 		std::cout << score << '\n';
 		if (score >= min_score)
 			break;
 
-		n.next(5);
+		n.next<std::greater>(5);
 	}
 	assert(generation != max_generations);
 

@@ -249,10 +249,28 @@ requires(sizeof...(Ss) >= 2) class Net {
 	using result_type = typename net_type::result_type;
 	using feed_type = typename net_type::feed_type;
 
+	template <typename>
+	struct compare_default;
+
 	struct tuple_type : std::tuple<score_type, net_type, result_type> {
 		friend constexpr auto operator<=>(const tuple_type& a,
 										  const tuple_type& b) {
 			return std::get<score_type>(a) <=> std::get<score_type>(b);
+		}
+	};
+	template <>
+	struct compare_default<score_type> {
+		constexpr bool operator()(const score_type& a,
+								  const score_type& b) const {
+			return abs(a) < abs(b);
+		}
+	};
+	template <>
+	struct compare_default<tuple_type> {
+		constexpr bool operator()(const tuple_type& a,
+								  const tuple_type& b) const {
+			return compare_default<score_type>()(std::get<score_type>(a),
+												 std::get<score_type>(b));
 		}
 	};
 
@@ -311,7 +329,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return *this;
 	}
 
-	template <template <typename> typename Compare = std::greater>
+	template <template <typename> typename Compare = compare_default>
 	constexpr Net& next(int mutation = 2,
 						Compare<tuple_type> comp = Compare<tuple_type>()) {
 		std::sort(std::begin(nets), std::end(nets), comp);
@@ -343,7 +361,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return o / nets_size;
 	}
 
-	template <template <typename> typename Compare = std::greater>
+	template <template <typename> typename Compare = compare_default>
 	constexpr score_type best_score(Compare<score_type> comp = {}) const {
 		score_type best = std::get<score_type>(nets[0]);
 
