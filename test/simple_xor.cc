@@ -6,11 +6,14 @@
 
 #include <Net.hh>
 
+#include "common.hh"
+
+using namespace std::literals;
+
 using net_type = net::SimpleNet<2, 3, 2>;
 using tuple_type = std::tuple<float, net_type>;
 
 constexpr auto to_use = 25;
-constexpr auto max_generations = 10000;
 constexpr auto min_score =
 	7.5f; /* maximum score is (is_true{1} + is_false{1}) * tests{4} = 8 */
 
@@ -25,6 +28,7 @@ auto check_false(const net_type::result_type& res) {
 };
 
 int main() {
+	TimeLimit timelimit(5s);
 	std::array<tuple_type, nets_size> nets;
 
 	for (auto& n : nets) {
@@ -34,8 +38,7 @@ int main() {
 	net_type::feed_type xor_data_in[4] = {
 		{0.f, 0.f}, {0.f, 1.f}, {1.f, 0.f}, {1.f, 1.f}};
 
-	size_t generation;
-	for (generation = 1; generation < max_generations; ++generation) {
+	for (;;) {
 		for (auto& n : nets) {
 			auto& result = std::get<float>(n);
 			auto& nn = std::get<net_type>(n);
@@ -61,7 +64,7 @@ int main() {
 		auto score = std::get<float>(nets[0]);
 		std::cout << score << '\n';
 		if (score >= min_score)
-			break;
+			std::exit(0);
 		for (size_t i = 0; i < to_use; ++i) {
 			for (size_t j = i + 1; j < to_use; ++j) {
 				size_t child_id = to_use - 1 + i * to_use + j;
@@ -73,9 +76,6 @@ int main() {
 			}
 		}
 	}
-	assert(generation != max_generations);
-
-	return 0;
 }
 
 // vim: set ts=4 sw=4 :
