@@ -9,6 +9,9 @@
 namespace net {
 using store_type = float;
 
+template <typename T, std::size_t S>
+using array = std::array<T, S>;
+
 namespace {
 constexpr auto abs(auto x) {
 	return x > 0 ? x : -x;
@@ -20,7 +23,7 @@ constexpr auto sigmoid(auto x) {
 template <std::size_t IN>
 class Neuron {
    public:
-	using feed_type = std::array<store_type, IN>;
+	using feed_type = array<store_type, IN>;
 	using result_type = store_type;
 
 	constexpr static auto data_size = IN * 2;
@@ -50,7 +53,7 @@ class Layer<IN, OUT> {
 
    public:
 	using feed_type = typename neuron_type::feed_type;
-	using result_type = std::array<typename neuron_type::result_type, OUT>;
+	using result_type = array<typename neuron_type::result_type, OUT>;
 
 	constexpr static auto data_size = neuron_type::data_size * OUT;
 	constexpr static auto in_size = neuron_type::in_size;
