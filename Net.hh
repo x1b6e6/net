@@ -390,8 +390,19 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return o;
 	}
 
-	constexpr result_type best_result() const {
-		return std::get<result_type>(nets[0]);
+	template <template <typename> typename Compare = compare_default>
+	constexpr result_type best_result(Compare<score_type> comp = {}) const {
+		result_type res = std::get<result_type>(nets[0]);
+		score_type score = std::get<score_type>(nets[0]);
+		for (auto& n : nets) {
+			score_type c_score = std::get<score_type>(n);
+			if (comp(c_score, score)) {
+				score = c_score;
+				res = std::get<result_type>(n);
+			}
+		}
+
+		return res;
 	}
 
    private:

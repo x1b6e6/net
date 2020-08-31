@@ -25,6 +25,8 @@ int main() {
 	auto d = n.result();
 	auto e = n.best_result();
 	auto f = n.score();
+	n.best_score<std::less>();
+	n.best_result<std::greater>();
 
 	return 0;
 }
