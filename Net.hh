@@ -7,31 +7,44 @@
 #include <stdexcept>
 
 namespace net {
+// main type used for storing, input and output data
 using store_type = float;
 
+// container for input and output data
 template <typename T, std::size_t S>
 using array = std::array<T, S>;
 
 namespace {
+// absolute value
 constexpr auto abs(auto x) {
 	return x > 0 ? x : -x;
 }
+
+// sigmoid
 constexpr auto sigmoid(auto x) {
 	return x / (1 + abs(x));
 }
 
+// class Neuron contained pointers (no ownership) to his data
 template <std::size_t IN>
 class Neuron {
    public:
+	// type of input
 	using feed_type = array<store_type, IN>;
+	// type of output
 	using result_type = store_type;
 
+	// number of store_type what it need
 	constexpr static auto data_size = IN * 2;
+	// size of input data
 	constexpr static auto in_size = IN;
+	// size of output data
 	constexpr static auto out_size = 1;
 
+	// construct Neuron
 	constexpr Neuron(store_type* data = nullptr) : ndata(data) {}
 
+	// computing result
 	constexpr result_type operator()(const feed_type& data) const {
 		result_type o = 0.f;
 		for (std::size_t i = 0; i < IN; ++i) {
@@ -41,24 +54,44 @@ class Neuron {
 	}
 
    private:
+	// current neuron data
 	store_type* ndata;
 };
 
+// class Layer contain Neurons
+// Warn: use recurrent deriving
+// look like this:
+// <1, 2, 3, 4>  => <2, 3, 4> ==> <3, 4>
+//      \\              \\
+//    <1, 2>          <2, 3>
+//
+//  \\ - deriving (base class at bottom)
+// ==> - deriving (base class at right)
+//  => - left class store right;
+//
 template <std::size_t...>
 class Layer;
 
+// end point of recurrent deriving of Layer
 template <std::size_t IN, std::size_t OUT>
 class Layer<IN, OUT> {
+	// type used neurons
 	using neuron_type = Neuron<IN>;
 
    public:
+	// type of input data
 	using feed_type = typename neuron_type::feed_type;
+	// type of output data
 	using result_type = array<typename neuron_type::result_type, OUT>;
 
+	// number of store_type what it need
 	constexpr static auto data_size = neuron_type::data_size * OUT;
+	// size of input data
 	constexpr static auto in_size = neuron_type::in_size;
+	// size of output data
 	constexpr static auto out_size = OUT;
 
+	// construct Layer and inner neurons
 	constexpr Layer(store_type* data)
 		: neurons(reinterpret_cast<neuron_type*>(operator new[](
 			  OUT * sizeof(neuron_type)))) {
@@ -67,13 +100,17 @@ class Layer<IN, OUT> {
 			data += neuron_type::data_size;
 		}
 	}
+
+	// destruct Layer with inner neurons
 	constexpr ~Layer() { operator delete[](neurons); }
 
+	// compute result via proccess()
 	constexpr result_type operator()(const feed_type& data) const {
 		return proccess(data);
 	}
 
    protected:
+	// compute result
 	constexpr result_type proccess(const feed_type& data) const {
 		result_type o{};
 
@@ -85,28 +122,40 @@ class Layer<IN, OUT> {
 	}
 
    private:
+	// neurons
 	neuron_type* neurons;
 };
 
+// recurrent Layer
 template <std::size_t IN, std::size_t OUT, std::size_t... Ss>
 class Layer<IN, OUT, Ss...> : Layer<IN, OUT> {
+	// type of base class
 	using base_type = Layer<IN, OUT>;
+	// type of stored class
 	using next_layer_type = Layer<OUT, Ss...>;
 
+	// number of store_type what base_type need
 	constexpr static auto base_data_size = base_type::data_size;
 
    public:
+	// type of input data
 	using feed_type = typename base_type::feed_type;
+	// type of output data
 	using result_type = typename next_layer_type::result_type;
 
+	// number of store_type what it need
 	constexpr static auto data_size =
 		base_type::data_size + next_layer_type::data_size;
+	// size of input data
 	constexpr static auto in_size = base_type::in_size;
+	// size of output data
 	constexpr static auto out_size = next_layer_type::out_size;
 
+	// construct base and stored Layer
 	constexpr Layer(store_type* data)
 		: base_type(data), next_layer(data + base_data_size) {}
 
+	// compute result
 	constexpr result_type operator()(const feed_type& data) const {
 		return next_layer(this->proccess(data));
 	}
@@ -115,6 +164,7 @@ class Layer<IN, OUT, Ss...> : Layer<IN, OUT> {
 	next_layer_type next_layer;
 };
 
+// helper function for computing efficient size for Net
 constexpr std::size_t compute_size(std::size_t to_use) {
 	if (to_use == 1)
 		return 0;
@@ -123,54 +173,75 @@ constexpr std::size_t compute_size(std::size_t to_use) {
 }
 }  // namespace
 
+// class SimpleNet contain first layer (but it contain next layer and etc).
+// class SimpleNet contain data for neurons
 template <std::size_t... Ss>
 requires(sizeof...(Ss) >= 2) class SimpleNet {
    public:
+	// type of first layer
 	using layer_type = Layer<Ss...>;
+	// type of output data
 	using result_type = typename layer_type::result_type;
+	// type of input data
 	using feed_type = typename layer_type::feed_type;
 
+	// number of store_type what all layers are contain
 	constexpr static auto data_size = layer_type::data_size;
+	// size of input data
 	constexpr static auto in_size = layer_type::in_size;
+	// size of output data
 	constexpr static auto out_size = layer_type::out_size;
 
+	// construct SimpleNet
+	// allocate neuron data
+	// allocate first layer
 	constexpr SimpleNet()
 		: data(new store_type[data_size]), layer(new layer_type(data)) {}
 
+	// copy constructor
 	constexpr SimpleNet(const SimpleNet& other) : SimpleNet() { *this = other; }
 
+	// deallocate store
 	constexpr ~SimpleNet() {
 		delete layer;
 		delete[] data;
 	}
 
+	// compute result
 	constexpr result_type operator()(const feed_type& data) {
 		return layer->operator()(data);
 	}
 
+	// copy data from other SimpleNet
 	constexpr SimpleNet& operator=(const SimpleNet& other) {
 		std::memcpy(data, other.data, data_size * sizeof(store_type));
 
 		return *this;
 	}
 
+	// check SimpleNets are equal
 	constexpr bool operator==(const SimpleNet& other) const {
 		return 0 ==
 			   std::memcmp(data, other.data, data_size * sizeof(store_type));
 	}
 
+	// wrapper for merge()
 	SimpleNet operator+(const SimpleNet& other) const { return merge(other); }
 
+	// wrapper for mutation()
 	SimpleNet& operator+(int mut) { return mutation(mut); }
 
+	// wrapper for mutation()
 	SimpleNet& operator++() { return mutation(); }
 
+	// wrapper for mutation()
 	SimpleNet operator++(int z) {
 		SimpleNet o{*this};
 		mutation(z ? z : 1);
 		return o;
 	}
 
+	// randomize network
 	void rand() {
 		std::random_device rd;
 		std::uniform_real_distribution<store_type> rand;
@@ -179,6 +250,7 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 		}
 	}
 
+	// merge networks by random indexes
 	SimpleNet merge(const SimpleNet& other) const {
 		SimpleNet o(*this);
 
@@ -199,6 +271,7 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 		return o;
 	}
 
+	// mutate stored neurons data at random index @count@ times
 	SimpleNet& mutation(std::size_t count = 1) {
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
@@ -214,9 +287,12 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 	}
 
    private:
+	// neurons data
 	store_type* data;
+	// ptr to first layer
 	layer_type* layer;
 
+	// operator for restoring SimpleNet from stream
 	template <typename Tchar>
 	friend std::basic_istream<Tchar>& operator>>(std::basic_istream<Tchar>& s,
 												 SimpleNet<Ss...>& n) {
@@ -224,6 +300,7 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 					  net::SimpleNet<Ss...>::data_size * sizeof(store_type));
 	}
 
+	// operator for saving SimpleNet to stream
 	template <typename Tchar>
 	friend std::basic_ostream<Tchar>& operator<<(std::basic_ostream<Tchar>& s,
 												 const SimpleNet<Ss...>& n) {
@@ -232,14 +309,21 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 	}
 };
 
+// class Net store SimpleNets his score and result
 template <std::size_t... Ss>
 requires(sizeof...(Ss) >= 2) class Net {
    public:
+	// type of used networks
 	using net_type = SimpleNet<Ss...>;
+	// type used for score of networks
 	using score_type = store_type;
+	// type of output data
 	using result_type = typename net_type::result_type;
+	// type of input data
 	using feed_type = typename net_type::feed_type;
 
+	// class for default comparing results and score
+	// return true if first param closest to 0 then second
 	template <typename T>
 	struct compare_default {
 		constexpr bool operator()(const T& a, const T& b) const {
@@ -247,6 +331,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		}
 	};
 
+	// struct stored network, his score and result
 	struct tuple_type : std::tuple<score_type, net_type, result_type> {
 		friend constexpr auto operator<=>(const tuple_type& a,
 										  const tuple_type& b) {
@@ -263,9 +348,15 @@ requires(sizeof...(Ss) >= 2) class Net {
 		}
 	};
 
+	// size of input data
 	constexpr static auto in_size = net_type::in_size;
+	// size of output data
 	constexpr static auto out_size = net_type::out_size;
 
+	// compute required size and allocate nets
+	// to_use_ is number of nets used for generating new generation
+	// immutable_ is number of nets NOT used for generating new generation
+	//                  but not overrided at generating new generation
 	constexpr Net(std::size_t to_use_, std::size_t immutable_ = 0)
 		: to_use(to_use_),
 		  immutable(immutable_),
@@ -276,6 +367,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		nets.resize(nets_size);
 	}
 
+	// check Nets is equal
 	constexpr bool operator==(const Net& other) {
 		for (std::size_t i = 0; i < nets_size; ++i) {
 			auto n1 = std::get<net_type>(nets[i]);
@@ -287,6 +379,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return true;
 	}
 
+	// randomize all nets
 	constexpr Net& rand() {
 		for (auto& n : nets) {
 			auto& nn = std::get<net_type>(n);
@@ -295,6 +388,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return *this;
 	}
 
+	// compute result
 	constexpr Net& feed(const feed_type& data) {
 		/* TODO: add multithreading */
 		for (auto& n : nets) {
@@ -306,6 +400,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return *this;
 	}
 
+	// count score for each network
 	template <typename Fn>
 	constexpr Net& count_score(Fn fn) {
 		/* TODO: add multithreading */
@@ -318,6 +413,8 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return *this;
 	}
 
+	// generate new generation using mutations and select best score by Compare
+	// class
 	template <template <typename> typename Compare = compare_default>
 	constexpr Net& next(int mutation = 2,
 						Compare<tuple_type> comp = Compare<tuple_type>()) {
@@ -340,6 +437,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return *this;
 	}
 
+	// return avg score
 	constexpr score_type score() const {
 		score_type o{};
 
@@ -350,6 +448,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return o / nets_size;
 	}
 
+	// return best score selected by Compare class
 	template <template <typename> typename Compare = compare_default>
 	constexpr score_type best_score(Compare<score_type> comp = {}) const {
 		score_type best = std::get<score_type>(nets[0]);
@@ -364,6 +463,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return best;
 	}
 
+	// reset all scores
 	constexpr Net& reset_score() {
 		/* TODO: add multithreading */
 		for (auto& n : nets) {
@@ -372,6 +472,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return *this;
 	}
 
+	// return avg result
 	constexpr result_type result() const {
 		result_type o;
 
@@ -390,6 +491,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		return o;
 	}
 
+	// return result of best net
 	template <template <typename> typename Compare = compare_default>
 	constexpr result_type best_result(Compare<score_type> comp = {}) const {
 		result_type res = std::get<result_type>(nets[0]);
@@ -409,6 +511,8 @@ requires(sizeof...(Ss) >= 2) class Net {
 	const std::size_t to_use;
 	const std::size_t nets_size;
 	const std::size_t immutable;
+
+	// networks
 	std::vector<tuple_type> nets;
 };
 
