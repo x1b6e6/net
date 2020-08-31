@@ -240,8 +240,12 @@ requires(sizeof...(Ss) >= 2) class Net {
 	using result_type = typename net_type::result_type;
 	using feed_type = typename net_type::feed_type;
 
-	template <typename>
-	struct compare_default;
+	template <typename T>
+	struct compare_default {
+		constexpr bool operator()(const T& a, const T& b) const {
+			return abs(a) < abs(b);
+		}
+	};
 
 	struct tuple_type : std::tuple<score_type, net_type, result_type> {
 		friend constexpr auto operator<=>(const tuple_type& a,
@@ -249,13 +253,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 			return std::get<score_type>(a) <=> std::get<score_type>(b);
 		}
 	};
-	template <>
-	struct compare_default<score_type> {
-		constexpr bool operator()(const score_type& a,
-								  const score_type& b) const {
-			return abs(a) < abs(b);
-		}
-	};
+
 	template <>
 	struct compare_default<tuple_type> {
 		constexpr bool operator()(const tuple_type& a,
