@@ -163,14 +163,6 @@ class Layer<IN, OUT, Ss...> : Layer<IN, OUT> {
    private:
 	next_layer_type next_layer;
 };
-
-// helper function for computing efficient size for Net
-constexpr std::size_t compute_size(std::size_t to_use) {
-	if (to_use == 1)
-		return 0;
-
-	return (to_use - 1) + compute_size(to_use - 1);
-}
 }  // namespace
 
 // class SimpleNet contain first layer (but it contain next layer and etc).
@@ -360,7 +352,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 	constexpr Net(std::size_t to_use_, std::size_t immutable_ = 0)
 		: to_use(to_use_),
 		  immutable(immutable_),
-		  nets_size(to_use_ + immutable_ + compute_size(to_use_)) {
+		  nets_size(to_use_ + immutable_ + (to_use * (to_use >> 1))) {
 		if (to_use < 3) {
 			throw std::invalid_argument{"net::Net to_use should be >=2"};
 		}
