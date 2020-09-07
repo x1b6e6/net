@@ -353,7 +353,7 @@ requires(sizeof...(Ss) >= 2) class Net {
 		: to_use(to_use_),
 		  immutable(immutable_),
 		  nets_size(to_use_ + immutable_ + (to_use * (to_use >> 1))) {
-		if (to_use < 3) {
+		if (to_use < 2) {
 			throw std::invalid_argument{"net::Net to_use should be >=2"};
 		}
 		nets.resize(nets_size);
