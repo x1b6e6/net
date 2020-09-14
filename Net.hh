@@ -142,17 +142,19 @@ class Layer<IN, OUT> {
 	constexpr ~Layer() { operator delete[](neurons); }
 
 	// compute result via proccess()
-	constexpr result_type operator()(const feed_type& data) const {
+	constexpr result_type operator()(feed_type& data) const {
 		return proccess(data);
 	}
 
 	// compute result
-	constexpr result_type proccess(const feed_type& data) const {
+	constexpr result_type proccess(feed_type& data) const {
 		result_type o{};
 
 		for (std::size_t i = 0; i < OUT; ++i) {
 			o[i] = neurons[i](data);
 		}
+
+		data.release();
 
 		return o;
 	}
@@ -192,12 +194,13 @@ class Layer<IN, OUT, Ss...> {
 		: base(data), next_layer(data + base_data_size) {}
 
 	// compute result
-	constexpr result_type operator()(const feed_type& data) const {
+	constexpr result_type operator()(feed_type& data) const {
 		return proccess(data);
 	}
 
-	constexpr result_type proccess(const feed_type& data) const {
+	constexpr result_type proccess(feed_type& data) const {
 		auto tmp = base(data);
+		data.release();
 		return next_layer(tmp);
 	}
 
@@ -322,7 +325,8 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 
 	// compute result
 	result_type proccess(const feed_type& data) const {
-		return layer->proccess(data);
+		auto data_copy{data};
+		return layer->proccess(data_copy);
 	}
 
    private:
