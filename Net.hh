@@ -78,6 +78,11 @@ class Neuron {
 
 	// computing result
 	constexpr result_type operator()(const feed_type& data) const {
+		return proccess(data);
+	}
+
+	// computing result
+	constexpr result_type proccess(const feed_type& data) const {
 		result_type o = 0.f;
 		for (std::size_t i = 0; i < IN; ++i) {
 			o += data[i] * ndata[i << 1] + ndata[(i << 1) + 1];
@@ -141,7 +146,6 @@ class Layer<IN, OUT> {
 		return proccess(data);
 	}
 
-   protected:
 	// compute result
 	constexpr result_type proccess(const feed_type& data) const {
 		result_type o{};
@@ -160,7 +164,7 @@ class Layer<IN, OUT> {
 
 // recurrent Layer
 template <std::size_t IN, std::size_t OUT, std::size_t... Ss>
-class Layer<IN, OUT, Ss...> : Layer<IN, OUT> {
+class Layer<IN, OUT, Ss...> {
 	// type of base class
 	using base_type = Layer<IN, OUT>;
 	// type of stored class
@@ -185,14 +189,20 @@ class Layer<IN, OUT, Ss...> : Layer<IN, OUT> {
 
 	// construct base and stored Layer
 	constexpr Layer(store_type* data)
-		: base_type(data), next_layer(data + base_data_size) {}
+		: base(data), next_layer(data + base_data_size) {}
 
 	// compute result
 	constexpr result_type operator()(const feed_type& data) const {
-		return next_layer(this->proccess(data));
+		return proccess(data);
+	}
+
+	constexpr result_type proccess(const feed_type& data) const {
+		auto tmp = base(data);
+		return next_layer(tmp);
 	}
 
    private:
+	base_type base;
 	next_layer_type next_layer;
 };
 }  // namespace
@@ -232,8 +242,8 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 	}
 
 	// compute result
-	constexpr result_type operator()(const feed_type& data) {
-		return layer->operator()(data);
+	constexpr result_type operator()(const feed_type& data) const {
+		return proccess(data);
 	}
 
 	// copy data from other SimpleNet
@@ -308,6 +318,11 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 		}
 
 		return *this;
+	}
+
+	// compute result
+	result_type proccess(const feed_type& data) const {
+		return layer->proccess(data);
 	}
 
    private:
