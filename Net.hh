@@ -3,6 +3,7 @@
 #include <array>
 #include <cstring>
 #include <functional>
+#include <initializer_list>
 #include <random>
 #include <stdexcept>
 
@@ -12,7 +13,38 @@ using store_type = float;
 
 // container for input and output data
 template <typename T, std::size_t S>
-using array = std::array<T, S>;
+class array {
+   public:
+	constexpr array() : data(new T[S]) {}
+	constexpr array(const std::initializer_list<T>& list) : array() {
+		std::memcpy(data, list.begin(), list.size() * sizeof(T));
+	}
+	constexpr array(const array& other) : array() { *this = other; }
+	constexpr ~array() { release(); }
+
+	constexpr T& operator[](std::size_t index) const { return *(data + index); }
+	constexpr T& at(std::size_t index) const {
+		if (index >= S)
+			throw std::invalid_argument("index out of bounds");
+		return operator[](index);
+	}
+	constexpr std::size_t size() const { return S; }
+	constexpr T* get() const { return data; }
+
+	constexpr void operator=(const array& other) {
+		std::memcpy(data, other.data, S * sizeof(T));
+	}
+
+	constexpr void release() {
+		if (data != nullptr) {
+			delete[] data;
+			data = nullptr;
+		}
+	}
+
+   private:
+	T* data;
+};
 
 namespace {
 // absolute value
