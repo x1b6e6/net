@@ -608,8 +608,8 @@ requires(sizeof...(Ss) >= 2) class Net {
 
    private:
 	const std::size_t to_use;
-	const std::size_t nets_size;
 	const std::size_t immutable;
+	const std::size_t nets_size;
 
 	// networks
 	std::vector<tuple_type> nets;
