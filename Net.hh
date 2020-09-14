@@ -165,16 +165,6 @@ class Neuron {
 };
 
 // class Layer contain Neurons
-// Warn: use recurrent deriving
-// look like this:
-// <1, 2, 3, 4>  => <2, 3, 4> ==> <3, 4>
-//      \\              \\
-//    <1, 2>          <2, 3>
-//
-//  \\ - deriving (base class at bottom)
-// ==> - deriving (base class at right)
-//  => - left class store right;
-//
 template <std::size_t...>
 class Layer;
 
