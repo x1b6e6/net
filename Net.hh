@@ -6,6 +6,7 @@
 #include <initializer_list>
 #include <random>
 #include <stdexcept>
+#include <utility>
 
 namespace net {
 // main type used for storing, input and output data
@@ -15,35 +16,103 @@ using store_type = float;
 template <typename T, std::size_t S>
 class array {
    public:
-	constexpr array() : data(new T[S]) {}
+	using value_type = T;
+	using size_type = std::size_t;
+	using difference_type = std::ptrdiff_t;
+	using reference = value_type&;
+	using const_reference = const value_type&;
+	using pointer = T*;
+	using const_pointer = const T*;
+
+	// FIXME: using std::iterator instead of raw pointer
+	using iterator = T*;
+	using const_iterator = const T*;
+
+	// TODO:
+	// using reverse_iterator =
+	// using const_reverse_iterator =
+
+	constexpr array() : _data(new T[S]) {}
 	constexpr array(const std::initializer_list<T>& list) : array() {
-		std::memcpy(data, list.begin(), list.size() * sizeof(T));
+		std::memcpy(data(), list.begin(), list.size() * sizeof(T));
 	}
 	constexpr array(const array& other) : array() { *this = other; }
 	constexpr ~array() { release(); }
 
-	constexpr T& operator[](std::size_t index) const { return *(data + index); }
-	constexpr T& at(std::size_t index) const {
-		if (index >= S)
-			throw std::invalid_argument("index out of bounds");
-		return operator[](index);
+	constexpr reference operator[](size_type index) {
+		return *(data() + index);
 	}
-	constexpr std::size_t size() const { return S; }
-	constexpr T* get() const { return data; }
+	constexpr const_reference operator[](size_type index) const {
+		return *(data() + index);
+	}
+
+	constexpr reference at(size_type index) {
+		if (index >= size())
+			throw std::out_of_range("index out of bounds");
+		return *(data() + index);
+	}
+	constexpr const_reference at(size_type index) const {
+		if (index >= size())
+			throw std::out_of_range("index out of bounds");
+		return *(data() + index);
+	}
+
+	constexpr bool empty() const noexcept { return size() == 0; }
+	constexpr size_type size() const noexcept { return S; }
+	constexpr size_type max_size() const noexcept { return size(); }
 
 	constexpr void operator=(const array& other) {
-		std::memcpy(data, other.data, S * sizeof(T));
+		std::memcpy(data(), other.data(), size() * sizeof(T));
 	}
 
 	constexpr void release() {
-		if (data != nullptr) {
-			delete[] data;
-			data = nullptr;
+		if (_data != nullptr) {
+			delete[] _data;
+			_data = nullptr;
+		}
+	}
+
+	constexpr reference front() { return operator[](0); }
+	constexpr const_reference front() const { return operator[](0); }
+
+	constexpr reference back() { return operator[](size() - 1); }
+	constexpr const_reference back() const { return operator[](size() - 1); }
+
+	constexpr pointer data() noexcept { return _data; }
+	constexpr const_pointer data() const noexcept { return _data; }
+
+	constexpr iterator begin() noexcept { return data(); }
+	constexpr const_iterator begin() const noexcept { return data(); }
+	constexpr const_iterator cbegin() const noexcept { return data(); }
+
+	constexpr iterator end() noexcept { return data() + size(); }
+	constexpr const_iterator end() const noexcept { return data() + size(); }
+	constexpr const_iterator cend() const noexcept { return data() + size(); }
+
+	// TODO:
+	// rbegin()
+	// rend()
+	// crbegin()
+	// crend()
+
+	constexpr void fill(const T& val) { std::memset(data(), val, size()); }
+
+	constexpr void swap(array& other) noexcept(std::is_nothrow_swappable_v<T>) {
+		auto mit = begin();
+		auto oit = other.begin();
+
+		auto mend = end();
+
+		while (mit != mend) {
+			std::swap(*mit, *oit);
+
+			++mit;
+			++oit;
 		}
 	}
 
    private:
-	T* data;
+	T* _data;
 };
 
 namespace {
