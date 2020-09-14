@@ -1,12 +1,9 @@
 #pragma once
 
-#include <array>
 #include <cstring>
 #include <functional>
-#include <initializer_list>
 #include <random>
 #include <stdexcept>
-#include <utility>
 
 namespace net {
 // main type used for storing, input and output data
