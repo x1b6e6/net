@@ -9,6 +9,9 @@ namespace net {
 // main type used for storing, input and output data
 using store_type = float;
 
+// mutations will be in [-mutk, mutk]
+constexpr store_type mutk = 50.f;
+
 // container for input and output data
 template <typename T, std::size_t S>
 class array {
@@ -369,7 +372,7 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 		std::random_device rd;
 		std::uniform_int_distribution<std::size_t> rand_index(
 			0, layer_type::data_size - 1);
-		std::uniform_real_distribution<store_type> rand_mutation(-50.f, 50.f);
+		std::uniform_real_distribution<store_type> rand_mutation(-mutk, mutk);
 
 		for (std::size_t i = 0; i < count; ++i) {
 			auto mut_idx = rand_index(rd);
