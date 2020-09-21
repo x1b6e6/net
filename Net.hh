@@ -146,11 +146,6 @@ class Neuron {
 	constexpr Neuron(store_type* data = nullptr) : ndata(data) {}
 
 	// computing result
-	constexpr result_type operator()(const feed_type& data) const {
-		return proccess(data);
-	}
-
-	// computing result
 	constexpr result_type proccess(const feed_type& data) const {
 		result_type o = 0.f;
 		for (std::size_t i = 0; i < IN; ++i) {
@@ -200,17 +195,12 @@ class Layer<IN, OUT> {
 	// destruct Layer with inner neurons
 	constexpr ~Layer() { operator delete[](neurons); }
 
-	// compute result via proccess()
-	constexpr result_type operator()(feed_type& data) const {
-		return proccess(data);
-	}
-
 	// compute result
 	constexpr result_type proccess(feed_type& data) const {
 		result_type o{};
 
 		for (std::size_t i = 0; i < OUT; ++i) {
-			o[i] = neurons[i](data);
+			o[i] = neurons[i].proccess(data);
 		}
 
 		data.release();
@@ -252,15 +242,10 @@ class Layer<IN, OUT, Ss...> {
 	constexpr Layer(store_type* data)
 		: base(data), next_layer(data + base_data_size) {}
 
-	// compute result
-	constexpr result_type operator()(feed_type& data) const {
-		return proccess(data);
-	}
-
 	constexpr result_type proccess(feed_type& data) const {
-		auto tmp = base(data);
+		auto tmp = base.proccess(data);
 		data.release();
-		return next_layer(tmp);
+		return next_layer.proccess(tmp);
 	}
 
    private:
