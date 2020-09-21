@@ -409,11 +409,9 @@ requires(sizeof...(Ss) >= 2) class SimpleNet {
 };
 
 // class Net store SimpleNets his score and result
-template <std::size_t... Ss>
-requires(sizeof...(Ss) >= 2) class Net {
+template <typename net_type>
+class Net {
    public:
-	// type of used networks
-	using net_type = SimpleNet<Ss...>;
 	// type used for score of networks
 	using score_type = store_type;
 	// type of output data

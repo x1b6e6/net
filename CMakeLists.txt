@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(net VERSION 0.1.0 LANGUAGES CXX)
+project(net VERSION 0.2.0 LANGUAGES CXX)
 
 if(CMAKE_CXX_STANDARD LESS 20)
 	set(CMAKE_CXX_STANDARD 20)

@@ -8,7 +8,7 @@
 using namespace std::literals;
 
 // using this type
-using net_type = net::Net<2, 3, 2>;
+using net_type = net::Net<net::SimpleNet<2, 3, 2>>;
 
 // stop training when score greater or equal min_score
 constexpr auto min_score =

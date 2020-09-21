@@ -1,6 +1,6 @@
 #include <Net.hh>
 
-using net_type = net::Net<2, 2>;
+using net_type = net::Net<net::SimpleNet<2, 2>>;
 
 int main() {
 	try {
