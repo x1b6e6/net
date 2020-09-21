@@ -550,7 +550,6 @@ class Net {
 
 	// reset all scores
 	constexpr Net& reset_score() {
-		/* TODO: add multithreading */
 		for (auto& n : nets) {
 			std::get<score_type>(n) = score_type{};
 		}
@@ -563,12 +562,10 @@ class Net {
 
 		for (auto& n : nets) {
 			const auto& res = std::get<result_type>(n);
-			/* TODO: add multithreading */
 			for (std::size_t i = 0; i < out_size; ++i) {
 				o[i] += res[i];
 			}
 		}
-		/* TODO: add multithreading */
 		for (std::size_t i = 0; i < out_size; ++i) {
 			o[i] /= nets_size;
 		}
