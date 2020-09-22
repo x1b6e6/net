@@ -101,7 +101,7 @@ class array {
 	constexpr const_iterator begin() const noexcept { return data(); }
 	constexpr const_iterator cbegin() const noexcept { return data(); }
 
-	constexpr iterator end() noexcept { return iterator(data() + size()); }
+	constexpr iterator end() noexcept { return data() + size(); }
 	constexpr const_iterator end() const noexcept { return data() + size(); }
 	constexpr const_iterator cend() const noexcept { return data() + size(); }
 
