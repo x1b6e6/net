@@ -74,7 +74,7 @@ Compute result of neural network.
 nn.feed(data);
 ```
 
-- `data` here is variable (can be constant) of type `net_type::feed_type`. It's simple `std::array` with specified type and size provided by first layer.
+- `data` here is variable (can be constant) of type `net_type::feed_type`. It's `net::array` (same as `std::array`, but with releasing memory), can be converted from `std::array`.
 
 ### Count score of networks
 
@@ -146,7 +146,7 @@ nn.best_result<Comparator>();
 
 You can also build your custom Trainer with using `SimpleNet`. Look examples network with `SimpleNet`.
 
-### XOR networks:
+XOR networks:
 
 - with Net: [net_xor](test/net_xor.cc)
 - with SimpleNet: [simple_xor](test/simple_xor.cc)
