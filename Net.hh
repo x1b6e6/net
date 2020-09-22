@@ -2,6 +2,7 @@
 
 #include <cstring>
 #include <functional>
+#include <iterator>
 #include <random>
 #include <stdexcept>
 
@@ -24,13 +25,11 @@ class array {
 	using pointer = T*;
 	using const_pointer = const T*;
 
-	// FIXME: using std::iterator instead of raw pointer
-	using iterator = T*;
-	using const_iterator = const T*;
+	using iterator = pointer;
+	using const_iterator = const_pointer;
 
-	// TODO:
-	// using reverse_iterator =
-	// using const_reverse_iterator =
+	using reverse_iterator = std::reverse_iterator<iterator>;
+	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
 	constexpr array() : _data(new T[S]) {}
 	constexpr array(const std::initializer_list<T>& list) : array() {
@@ -85,15 +84,29 @@ class array {
 	constexpr const_iterator begin() const noexcept { return data(); }
 	constexpr const_iterator cbegin() const noexcept { return data(); }
 
-	constexpr iterator end() noexcept { return data() + size(); }
+	constexpr iterator end() noexcept { return iterator(data() + size()); }
 	constexpr const_iterator end() const noexcept { return data() + size(); }
 	constexpr const_iterator cend() const noexcept { return data() + size(); }
 
-	// TODO:
-	// rbegin()
-	// rend()
-	// crbegin()
-	// crend()
+	constexpr reverse_iterator rbegin() noexcept {
+		return std::make_reverse_iterator(end());
+	}
+	constexpr const_reverse_iterator rbegin() const noexcept {
+		return std::make_reverse_iterator(cend());
+	}
+	constexpr const_reverse_iterator crbegin() const noexcept {
+		return std::make_reverse_iterator(end());
+	}
+
+	constexpr reverse_iterator rend() noexcept {
+		return std::make_reverse_iterator(begin());
+	}
+	constexpr const_reverse_iterator rend() const noexcept {
+		return std::make_reverse_iterator(cbegin());
+	}
+	constexpr const_reverse_iterator crend() const noexcept {
+		return std::make_reverse_iterator(begin());
+	}
 
 	constexpr void fill(const T& val) { std::memset(data(), val, size()); }
 

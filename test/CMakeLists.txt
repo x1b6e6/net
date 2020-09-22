@@ -14,5 +14,6 @@ new_test(simple_functions)
 new_test(simple_xor)
 new_test(net_functions)
 new_test(net_xor)
+new_test(array)
 
 # vim: set ts=4 sw=4 :
