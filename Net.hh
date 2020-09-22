@@ -31,11 +31,24 @@ class array {
 	using reverse_iterator = std::reverse_iterator<iterator>;
 	using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 
-	constexpr array() : _data(new T[S]) {}
-	constexpr array(const std::initializer_list<T>& list) : array() {
-		std::memcpy(data(), list.begin(), list.size() * sizeof(T));
+	constexpr array() : _data(new value_type[S]) {}
+	constexpr array(const std::initializer_list<value_type>& list) : array() {
+		std::memcpy(data(), list.begin(), list.size() * sizeof(value_type));
+	}
+	template <typename Iter>
+	constexpr array(Iter _begin, Iter _end) : array() {
+		auto oit = _begin;
+
+		for (auto& mit : *this) {
+			mit = *oit;
+
+			++oit;
+		}
 	}
 	constexpr array(const array& other) : array() { *this = other; }
+	constexpr array(const std::array<value_type, S>& arr) : array() {
+		*this = arr;
+	}
 	constexpr ~array() { release(); }
 
 	constexpr reference operator[](size_type index) {
@@ -61,10 +74,14 @@ class array {
 	constexpr size_type max_size() const noexcept { return size(); }
 
 	constexpr void operator=(const array& other) {
-		std::memcpy(data(), other.data(), size() * sizeof(T));
+		std::memcpy(data(), other.data(), size() * sizeof(value_type));
 	}
 
-	constexpr void release() {
+	constexpr void operator=(const std::array<value_type, S>& other) {
+		std::memcpy(data(), other.data(), size() * sizeof(value_type));
+	}
+
+	constexpr void release() noexcept {
 		if (_data != nullptr) {
 			delete[] _data;
 			_data = nullptr;
@@ -111,15 +128,21 @@ class array {
 	constexpr void fill(const T& val) { std::memset(data(), val, size()); }
 
 	constexpr void swap(array& other) noexcept(std::is_nothrow_swappable_v<T>) {
-		auto mit = begin();
 		auto oit = other.begin();
 
-		auto mend = end();
+		for (auto& mit : *this) {
+			std::swap(mit, *oit);
+			++oit;
+		}
+	}
 
-		while (mit != mend) {
-			std::swap(*mit, *oit);
+	constexpr void swap(std::array<T, S>& other) noexcept(
+		std::is_nothrow_swappable_v<T>) {
+		auto oit = other.begin();
 
-			++mit;
+		for (auto& mit : *this) {
+			std::swap(mit, *oit);
+
 			++oit;
 		}
 	}
